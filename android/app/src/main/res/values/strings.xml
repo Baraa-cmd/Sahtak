@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">صحتك دير حافر</string>
+    <string name="title_activity_main">صحتك دير حافر</string>
+    <string name="package_name">com.sehatuk.dayrhafir</string>
+    <string name="custom_url_scheme">com.sehatuk.dayrhafir</string>
+</resources>

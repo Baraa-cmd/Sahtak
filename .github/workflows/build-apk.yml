@@ -1,0 +1,80 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build & Package Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Node Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Web Application
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradlew Executable
+        run: chmod +x android/gradlew
+
+      - name: Build Android APK with Gradle
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Prepare APK Output
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Sehatuk-DayrHafir.apk
+
+      - name: Upload APK as GitHub Run Artifact (Direct Download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sehatuk-DayrHafir-APK
+          path: apk-output/Sehatuk-DayrHafir.apk
+          retention-days: 30
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          tag_name: v1.0-apk
+          name: "📱 تطبيق صحتك دير حافر (Android APK)"
+          body: |
+            ### 🩺 تطبيق صحتك - دير حافر للأندرويد
+            
+            ✅ تم بناء هذا الملف تلقائياً بعد كل تحديث على GitHub.
+            - قم بتحميل ملف **`Sehatuk-DayrHafir.apk`** المرفق وتثبيته مباشرة على هاتفك.
+            - التطبيق أصلي بالكامل، يتصل بقاعدة البيانات الحية، ولا يظهر أي إشعارات متصفح خارجية.
+          files: apk-output/Sehatuk-DayrHafir.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

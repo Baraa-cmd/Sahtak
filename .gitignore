@@ -9,3 +9,11 @@ coverage/
 .env*
 !.env.example
 
+# Android build caches
+android/.gradle/
+android/app/build/
+android/build/
+*.apk
+*.aab
+
+
