@@ -1,4 +1,4 @@
-package com.sehatuk.dayrhafir;
+package com.sahtak.dierhafer;
 
 import com.getcapacitor.BridgeActivity;
 

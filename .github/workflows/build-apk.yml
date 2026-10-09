@@ -54,13 +54,13 @@ jobs:
       - name: Prepare APK Output
         run: |
           mkdir -p apk-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Sehatuk-DayrHafir.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Sahtak-Dierhafer.apk
 
       - name: Upload APK as GitHub Run Artifact (Direct Download)
         uses: actions/upload-artifact@v4
         with:
-          name: Sehatuk-DayrHafir-APK
-          path: apk-output/Sehatuk-DayrHafir.apk
+          name: Sahtak-Dierhafer-APK
+          path: apk-output/Sahtak-Dierhafer.apk
           retention-days: 30
 
       - name: Publish to GitHub Releases
@@ -68,13 +68,13 @@ jobs:
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v1.0-apk
-          name: "📱 تطبيق صحتك دير حافر (Android APK)"
+          name: "📱 تطبيق صحتك دير حافر (Sahtak Dierhafer APK)"
           body: |
-            ### 🩺 تطبيق صحتك - دير حافر للأندرويد
+            ### 🩺 تطبيق صحتك - دير حافر للأندرويد (Package: com.sahtak.dierhafer)
             
             ✅ تم بناء هذا الملف تلقائياً بعد كل تحديث على GitHub.
-            - قم بتحميل ملف **`Sehatuk-DayrHafir.apk`** المرفق وتثبيته مباشرة على هاتفك.
+            - قم بتحميل ملف **`Sahtak-Dierhafer.apk`** المرفق وتثبيته مباشرة على هاتفك.
             - التطبيق أصلي بالكامل، يتصل بقاعدة البيانات الحية، ولا يظهر أي إشعارات متصفح خارجية.
-          files: apk-output/Sehatuk-DayrHafir.apk
+          files: apk-output/Sahtak-Dierhafer.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
