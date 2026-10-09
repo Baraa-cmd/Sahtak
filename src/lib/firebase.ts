@@ -204,13 +204,25 @@ export async function updatePharmacyStatus(
   updates: Partial<Pharmacy>
 ) {
   const path = `pharmacies/${pharmacyId}`;
+  const finalUpdates: Partial<Pharmacy> = {
+    ...updates,
+    updatedAt: new Date().toISOString()
+  };
+
+  if (updates.isOnDuty === true) {
+    finalUpdates.lastDutyBroadcastAt = new Date().toISOString();
+  }
+
   try {
-    await updateDoc(doc(db, 'pharmacies', pharmacyId), {
-      ...updates,
-      updatedAt: new Date().toISOString()
-    });
+    await updateDoc(doc(db, 'pharmacies', pharmacyId), finalUpdates);
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
+    // If offline, still update local cache
+    const current = offlineStorage.getPharmacies() || INITIAL_PHARMACIES;
+    const updated = current.map((p) =>
+      p.id === pharmacyId ? { ...p, ...finalUpdates } : p
+    );
+    offlineStorage.savePharmacies(updated);
     throw error;
   }
 }

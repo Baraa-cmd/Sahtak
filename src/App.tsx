@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { X, BellRing } from 'lucide-react';
 import {
   Pharmacy,
   Nurse,
@@ -92,6 +93,17 @@ export default function App() {
     isOnDuty?: boolean;
   } | null>(null);
   const [communityToast, setCommunityToast] = useState<string | null>(null);
+
+  // Duty Alert Toast state & refs for tracking on-duty changes
+  const [dutyToast, setDutyToast] = useState<{
+    id: string;
+    title: string;
+    pharmacyName: string;
+    district?: string;
+    dutyEndTime?: string;
+  } | null>(null);
+  const isInitialPharmaciesLoadRef = useRef(true);
+  const previousOnDutyPharmaciesRef = useRef<Map<string, boolean>>(new Map());
 
   // Selected Target for direct map routing
   const [selectedRouteTarget, setSelectedRouteTarget] = useState<SelectedRouteTarget | null>(null);
@@ -209,6 +221,54 @@ export default function App() {
     seedInitialDataIfEmpty();
 
     const unsubPharmacies = subscribeToPharmacies((data) => {
+      if (isInitialPharmaciesLoadRef.current) {
+        // Initialize reference map on first load without triggering alerts
+        isInitialPharmaciesLoadRef.current = false;
+        const initialMap = new Map<string, boolean>();
+        data.forEach((p) => {
+          initialMap.set(p.id, !!p.isOnDuty);
+        });
+        previousOnDutyPharmaciesRef.current = initialMap;
+        setRawPharmacies(data);
+        return;
+      }
+
+      // Check for any pharmacy that became on-duty (e.g. updated by admin/manager)
+      const prevMap = previousOnDutyPharmaciesRef.current;
+      const newlyOnDutyList = data.filter((p) => {
+        const wasOnDuty = prevMap.get(p.id) ?? false;
+        return p.isOnDuty && !wasOnDuty;
+      });
+
+      // Update map for future real-time diffing
+      const updatedMap = new Map<string, boolean>();
+      data.forEach((p) => {
+        updatedMap.set(p.id, !!p.isOnDuty);
+      });
+      previousOnDutyPharmaciesRef.current = updatedMap;
+
+      // Broadcast push notifications and banner to users
+      newlyOnDutyList.forEach((p) => {
+        // Send Web/PWA Push Notification: "تناوب الليلة : صيدلية كذا"
+        notificationService.sendDutyNotification(p.name, p.dutyEndTime, p.district);
+
+        const cleanName = p.name.trim().startsWith('صيدلية')
+          ? p.name.trim()
+          : `صيدلية ${p.name.trim()}`;
+
+        setDutyToast({
+          id: p.id,
+          title: `تناوب الليلة : ${cleanName}`,
+          pharmacyName: cleanName,
+          district: p.district,
+          dutyEndTime: p.dutyEndTime
+        });
+
+        setTimeout(() => {
+          setDutyToast(null);
+        }, 7000);
+      });
+
       setRawPharmacies(data);
     });
 
@@ -418,6 +478,32 @@ export default function App() {
           </div>
         )}
 
+        {/* Real-time Duty Push Notification In-App Toast: "تناوب الليلة : صيدلية كذا" */}
+        {dutyToast && (
+          <div className="bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-950 text-white text-xs px-4 py-3 flex items-center justify-between shadow-xl animate-fadeIn z-35 shrink-0 border-b-2 border-amber-400">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-black text-sm shrink-0 shadow-sm animate-pulse">
+                🌙
+              </div>
+              <div>
+                <div className="font-black text-amber-300 text-xs">
+                  {dutyToast.title}
+                </div>
+                <div className="text-[11px] text-emerald-100 font-medium">
+                  {dutyToast.dutyEndTime ? `المناوبة حتى ${dutyToast.dutyEndTime}` : 'متاحة الآن طوال الليل'}
+                  {dutyToast.district ? ` • ${dutyToast.district}` : ''}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setDutyToast(null)}
+              className="p-1 rounded-lg text-emerald-300 hover:text-white hover:bg-emerald-800/60 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Community Toast Notification */}
         {communityToast && (
           <div className="bg-emerald-800 text-white text-xs px-3.5 py-2 flex items-center justify-between shadow-md animate-fadeIn z-30 shrink-0 border-b border-emerald-600/40">
@@ -438,6 +524,8 @@ export default function App() {
               pharmacies={pharmaciesWithDistance}
               onSelectOnMap={handleSelectOnMap}
               onOpenCommunityReport={handleOpenCommunityReport}
+              notificationsEnabled={notificationsEnabled}
+              onRequestNotifications={handleRequestNotifications}
             />
           )}
 
@@ -517,6 +605,19 @@ export default function App() {
             setRawPharmacies((prev) =>
               prev.map((item) => (item.id === updated.id ? updated : item))
             );
+            if (updated.isOnDuty) {
+              const cleanName = updated.name.trim().startsWith('صيدلية')
+                ? updated.name.trim()
+                : `صيدلية ${updated.name.trim()}`;
+              setDutyToast({
+                id: updated.id,
+                title: `تناوب الليلة : ${cleanName}`,
+                pharmacyName: cleanName,
+                district: updated.district,
+                dutyEndTime: updated.dutyEndTime
+              });
+              setTimeout(() => setDutyToast(null), 7000);
+            }
           }}
           onNurseUpdated={(updated) => {
             setRawNurses((prev) =>

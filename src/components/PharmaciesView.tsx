@@ -10,7 +10,8 @@ import {
   Timer,
   ChevronLeft,
   MessageSquarePlus,
-  CheckCircle2
+  CheckCircle2,
+  Bell
 } from 'lucide-react';
 import { Pharmacy, SelectedRouteTarget } from '../types';
 import { formatArabicTime } from '../lib/initialData';
@@ -25,6 +26,8 @@ interface PharmaciesViewProps {
     district?: string;
     isOnDuty?: boolean;
   }) => void;
+  notificationsEnabled?: boolean;
+  onRequestNotifications?: () => void;
 }
 
 type FilterTab = 'nearest' | 'on_duty' | 'all';
@@ -32,7 +35,9 @@ type FilterTab = 'nearest' | 'on_duty' | 'all';
 export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
   pharmacies,
   onSelectOnMap,
-  onOpenCommunityReport
+  onOpenCommunityReport,
+  notificationsEnabled,
+  onRequestNotifications
 }) => {
   const [filterTab, setFilterTab] = useState<FilterTab>('nearest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,6 +103,26 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Push Notification Activation Prompt (if not yet granted) */}
+      {!notificationsEnabled && onRequestNotifications && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
+              <Bell className="w-4 h-4" />
+            </div>
+            <span className="text-[11px] font-bold text-amber-950 leading-tight">
+              فعّل التنبيهات لتصلك رسالة فورية: <strong>تناوب الليلة : صيدلية كذا</strong>
+            </span>
+          </div>
+          <button
+            onClick={onRequestNotifications}
+            className="bg-amber-600 hover:bg-amber-700 active:scale-95 text-white px-2.5 py-1.5 rounded-xl text-[11px] font-black shrink-0 transition-all shadow-xs"
+          >
+            تفعيل الآن
+          </button>
+        </div>
+      )}
 
       {/* Simplified Three Clear Tabs */}
       <div className="bg-slate-200/80 p-1 rounded-xl flex items-center gap-1 text-xs font-bold">

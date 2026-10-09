@@ -14,6 +14,7 @@ export interface Pharmacy {
   distanceKm?: number;
   communityVerifiedAt?: string;
   communityNote?: string;
+  lastDutyBroadcastAt?: string;
 }
 
 export interface Nurse {
