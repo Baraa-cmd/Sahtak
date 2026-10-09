@@ -249,12 +249,10 @@ export default function App() {
 
       // Broadcast push notifications and banner to users
       newlyOnDutyList.forEach((p) => {
+        const cleanName = notificationService.formatPharmacyName(p.name);
+
         // Send Web/PWA Push Notification: "تناوب الليلة : صيدلية كذا"
         notificationService.sendDutyNotification(p.name, p.dutyEndTime, p.district);
-
-        const cleanName = p.name.trim().startsWith('صيدلية')
-          ? p.name.trim()
-          : `صيدلية ${p.name.trim()}`;
 
         setDutyToast({
           id: p.id,
@@ -265,7 +263,7 @@ export default function App() {
         });
 
         setTimeout(() => {
-          setDutyToast(null);
+          setDutyToast((current) => (current?.id === p.id ? null : current));
         }, 7000);
       });
 
@@ -602,13 +600,21 @@ export default function App() {
           pharmacies={rawPharmacies}
           nurses={rawNurses}
           onPharmacyUpdated={(updated) => {
+            // Update previousOnDuty reference immediately to prevent duplicate alerts from Firestore echo
+            previousOnDutyPharmaciesRef.current.set(updated.id, !!updated.isOnDuty);
+
             setRawPharmacies((prev) =>
               prev.map((item) => (item.id === updated.id ? updated : item))
             );
+
             if (updated.isOnDuty) {
-              const cleanName = updated.name.trim().startsWith('صيدلية')
-                ? updated.name.trim()
-                : `صيدلية ${updated.name.trim()}`;
+              const cleanName = notificationService.formatPharmacyName(updated.name);
+              notificationService.sendDutyNotification(
+                updated.name,
+                updated.dutyEndTime,
+                updated.district
+              );
+
               setDutyToast({
                 id: updated.id,
                 title: `تناوب الليلة : ${cleanName}`,
@@ -616,7 +622,9 @@ export default function App() {
                 district: updated.district,
                 dutyEndTime: updated.dutyEndTime
               });
-              setTimeout(() => setDutyToast(null), 7000);
+              setTimeout(() => {
+                setDutyToast((current) => (current?.id === updated.id ? null : current));
+              }, 7000);
             }
           }}
           onNurseUpdated={(updated) => {

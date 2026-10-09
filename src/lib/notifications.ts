@@ -84,17 +84,38 @@ export const notificationService = {
     }
   },
 
+  // منع التكرار: سجل زمني لآخر إشعار تم إرساله لكل صيدلية (لمدة 60 ثانية)
+  _dutySentTimes: new Map<string, number>(),
+
+  /**
+   * تنسيق اسم الصيدلية وإزالة أي تكرار لكلمة "صيدلية"
+   */
+  formatPharmacyName(name: string): string {
+    let clean = name.trim();
+    // إزالة أي تكرار لكلمة "صيدلية" متتالية
+    clean = clean.replace(/^(صيدلية\s*)+/gi, '').trim();
+    return `صيدلية ${clean}`;
+  },
+
   /**
    * إشعار المناوبة الليلية المعتمد: "تناوب الليلة : صيدلية كذا"
+   * مع حماية كاملة ضد التكرار (Deduplication)
    */
   async sendDutyNotification(
     pharmacyName: string,
     dutyEndTime?: string,
     district?: string
   ): Promise<boolean> {
-    const rawName = pharmacyName.trim();
-    const cleanName = rawName.startsWith('صيدلية') ? rawName : `صيدلية ${rawName}`;
+    const cleanName = this.formatPharmacyName(pharmacyName);
     const title = `تناوب الليلة : ${cleanName}`;
+
+    // فحص منع التكرار: إذا تم إرسال إشعار لهذه الصيدلية خلال آخر 30 ثانية لا تكرره
+    const now = Date.now();
+    const lastSent = this._dutySentTimes.get(cleanName);
+    if (lastSent && now - lastSent < 30000) {
+      return false; // تم الإرسال مؤخراً، منع التكرار
+    }
+    this._dutySentTimes.set(cleanName, now);
 
     const bodyDetails = [
       district ? `المنطقة: ${district}` : '',
@@ -103,10 +124,12 @@ export const notificationService = {
       .filter(Boolean)
       .join(' | ');
 
+    // استخدام tag ثابت بدون Date.now() لمنع تكرار النوافذ في نظام التشغيل والمتصفح
+    const safeTag = `duty-${cleanName.replace(/\s+/g, '-')}`;
+
     return this.sendNotification(title, {
       body: bodyDetails || `تم اعتماد ${cleanName} رسمياً كمناوبة ليلية في دير حافر.`,
-      tag: `duty-${pharmacyName}-${Date.now()}`,
-      renotify: true
+      tag: safeTag
     } as NotificationOptions);
   }
 };
