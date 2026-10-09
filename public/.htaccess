@@ -1,0 +1,78 @@
+# ==============================================================================
+# Spaceship / LiteSpeed / Apache Configuration for Sehatuk Platform
+# ==============================================================================
+
+# Ensure index.html is the primary directory index
+DirectoryIndex index.html index.htm index.php
+
+# Prevent directory indexing
+Options -Indexes
+
+# Fallback Resource (LiteSpeed / Apache 2.4+)
+<IfModule mod_dir.c>
+  DirectoryIndex index.html index.htm index.php
+  FallbackResource /index.html
+</IfModule>
+
+# Enable Rewrite Engine for SPA client-side routing
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Ensure HTTPS (Auto SSL on Spaceship)
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP_HOST} !^localhost
+  RewriteCond %{HTTP_HOST} !^127\.0\.0\.1
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Redirect legacy/cached cpanel default page back to root
+  RewriteRule ^cgi-sys(/.*)?$ / [R=301,L]
+
+  # 1. When root domain is requested directly (empty path or slash), serve index.html
+  RewriteRule ^$ index.html [L]
+
+  # 2. When index.html is directly requested, do not rewrite
+  RewriteRule ^index\.html$ - [L]
+
+  # 3. Don't rewrite existing physical files (e.g. JS, CSS, images, robots.txt)
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+
+  # 4. Route ALL other requests (directories & SPA routes) directly to index.html
+  RewriteRule ^.*$ index.html [L]
+</IfModule>
+
+# Correct MIME Types
+<IfModule mod_mime.c>
+  AddType text/html .html
+  AddType text/css .css
+  AddType application/javascript .js
+  AddType application/json .json
+  AddType image/svg+xml .svg
+  AddType font/woff2 .woff2
+</IfModule>
+
+# Gzip / Deflate Compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json image/svg+xml
+</IfModule>
+
+# Cache-Control Headers for optimal performance
+<IfModule mod_headers.c>
+  # Cache Vite assets (with hash in filename) for 1 year
+  <FilesMatch "\.(js|css|woff2|woff|ttf|svg|png|jpg|jpeg|webp)$">
+    Header set Cache-Control "max-age=31536000, public, immutable"
+  </FilesMatch>
+
+  # Do NOT cache index.html so users always get app updates
+  <FilesMatch "index\.html">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+  </FilesMatch>
+
+  # Security Headers
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+

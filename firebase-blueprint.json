@@ -1,0 +1,75 @@
+{
+  "entities": {
+    "Pharmacy": {
+      "title": "Pharmacy",
+      "description": "بيانات الصيدلية وموقعها وحالة المناوبة والعمل",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "address": { "type": "string", "maxLength": 200 },
+        "district": { "type": "string", "maxLength": 100 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "isOpen": { "type": "boolean" },
+        "isOnDuty": { "type": "boolean" },
+        "dutyEndTime": { "type": "string", "maxLength": 50 },
+        "dutyHours": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "district", "latitude", "longitude", "isOpen", "isOnDuty"]
+    },
+    "Nurse": {
+      "title": "Nurse",
+      "description": "بيانات الممرض وموقعه وتخصصه وحالة المناوبة والتوفر",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "title": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "isAvailable": { "type": "boolean" },
+        "isOnDuty": { "type": "boolean" },
+        "dutyEndTime": { "type": "string", "maxLength": 50 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "experienceYears": { "type": "number" },
+        "rating": { "type": "number" },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "title", "district", "latitude", "longitude", "isAvailable", "isOnDuty", "phone"]
+    },
+    "Hospital": {
+      "title": "Hospital",
+      "description": "بيانات المشافي والمراكز الطبية للطوارئ",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "emergency24h": { "type": "boolean" },
+        "emergencyPhone": { "type": "string", "maxLength": 30 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "district", "latitude", "longitude", "emergency24h"]
+    }
+  },
+  "firestore": {
+    "/pharmacies/{pharmacyId}": {
+      "schema": "Pharmacy",
+      "description": "مجموعة الصيدليات المسجلة وحالات دوامها"
+    },
+    "/nurses/{nurseId}": {
+      "schema": "Nurse",
+      "description": "مجموعة الممرضين وحالات توفرهم ومناوبتهم"
+    },
+    "/hospitals/{hospitalId}": {
+      "schema": "Hospital",
+      "description": "مجموعة المشافي والمراكز الطبية"
+    }
+  }
+}

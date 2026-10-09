@@ -1,0 +1,6 @@
+{
+  "name": "منصة صحتك",
+  "description": "منصة صحية متكاملة لتقديم الإرشادات الصحية ومتابعة العادات ونمط الحياة السليم.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
