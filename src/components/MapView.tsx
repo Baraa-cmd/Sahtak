@@ -13,8 +13,6 @@ import {
   Footprints,
   Loader2,
   Route,
-  Crosshair,
-  MousePointerClick,
   Check
 } from 'lucide-react';
 import {
@@ -44,9 +42,6 @@ interface MapViewProps {
   selectedTarget: SelectedRouteTarget | null;
   onClearSelectedTarget: () => void;
   onSelectTarget: (target: SelectedRouteTarget) => void;
-  isManualPickerActive?: boolean;
-  onToggleManualPicker?: (active: boolean) => void;
-  onSetUserLocation?: (lat: number, lng: number, name?: string) => void;
   onOpenLocationModal?: () => void;
 }
 
@@ -58,9 +53,6 @@ export const MapView: React.FC<MapViewProps> = ({
   selectedTarget,
   onClearSelectedTarget,
   onSelectTarget,
-  isManualPickerActive = false,
-  onToggleManualPicker,
-  onSetUserLocation,
   onOpenLocationModal
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -272,23 +264,6 @@ export const MapView: React.FC<MapViewProps> = ({
     }
   }, [selectedTarget]);
 
-  // Click on map to set location if manual picker mode is active
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    const handleMapClick = (e: L.LeafletMouseEvent) => {
-      if (isManualPickerActive && onSetUserLocation) {
-        onSetUserLocation(e.latlng.lat, e.latlng.lng, 'موقع محدد بنقرة الخريطة 🎯');
-      }
-    };
-
-    map.on('click', handleMapClick);
-    return () => {
-      map.off('click', handleMapClick);
-    };
-  }, [isManualPickerActive, onSetUserLocation]);
-
   // Update Markers
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -297,21 +272,14 @@ export const MapView: React.FC<MapViewProps> = ({
 
     markersGroup.clearLayers();
 
-    // User marker - Draggable to allow pinpoint manual adjustment
+    // User marker
     const userMarker = L.marker([userLocation.latitude, userLocation.longitude], {
       icon: createUserIcon(),
       zIndexOffset: 1000,
-      draggable: true
-    }).bindTooltip('📍 موقعك (يمكنك سحب هذا الدبوس لتعديل مكانك بدقة)', {
+      draggable: false
+    }).bindTooltip('📍 موقعك في دير حافر', {
       direction: 'top',
       offset: [0, -14]
-    });
-
-    userMarker.on('dragend', (e) => {
-      const pos = (e.target as L.Marker).getLatLng();
-      if (onSetUserLocation) {
-        onSetUserLocation(pos.lat, pos.lng, 'موقع محدد بالسحب 📍');
-      }
     });
 
     markersGroup.addLayer(userMarker);
@@ -653,25 +621,8 @@ export const MapView: React.FC<MapViewProps> = ({
             </button>
           </div>
 
-          {/* Location Actions: Manual Picker + Re-center + Location Modal */}
+          {/* Location Actions: Re-center to my location */}
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => {
-                if (onToggleManualPicker) {
-                  onToggleManualPicker(!isManualPickerActive);
-                }
-              }}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all border ${
-                isManualPickerActive
-                  ? 'bg-emerald-700 text-white border-emerald-700 shadow-2xs ring-2 ring-emerald-300'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'
-              }`}
-              title="تحديد موقعي يدوياً على الخريطة بنقرة أو سحب"
-            >
-              <Crosshair className={`w-3.5 h-3.5 ${isManualPickerActive ? 'text-white animate-spin' : 'text-emerald-700'}`} />
-              <span>{isManualPickerActive ? 'وضع التحديد 🎯' : 'تحديد موقعي'}</span>
-            </button>
-
             {/* Re-center Button */}
             <button
               onClick={() => {
@@ -682,7 +633,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   );
                 }
               }}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold border border-slate-200"
               title="العودة لموقعي في دير حافر"
             >
               <Navigation className="w-3.5 h-3.5 fill-emerald-600 text-emerald-600" />
@@ -733,29 +684,6 @@ export const MapView: React.FC<MapViewProps> = ({
           </button>
         </div>
       </div>
-
-      {/* MANUAL PICKER INSTRUCTION BANNER */}
-      {isManualPickerActive && (
-        <div className="bg-gradient-to-r from-emerald-800 to-teal-800 text-white px-3.5 py-2 z-20 shrink-0 shadow-md flex items-center justify-between gap-2 border-b border-emerald-600 animate-in fade-in slide-in-from-top duration-150">
-          <div className="flex items-center gap-2 truncate">
-            <Crosshair className="w-4 h-4 text-emerald-300 animate-spin shrink-0" />
-            <div className="truncate">
-              <span className="font-extrabold text-xs block leading-tight">
-                انقر على مكانك في الخريطة 🎯
-              </span>
-              <span className="text-[10px] text-emerald-200 block leading-tight">
-                أو اسحب الدبوس الأزرق إلى موقعك الدقيق
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => onToggleManualPicker?.(false)}
-            className="px-3 py-1 bg-white text-emerald-900 rounded-xl text-xs font-black shrink-0 hover:bg-emerald-50 active:scale-95 shadow-xs transition-all"
-          >
-            حفظ الموقع ✓
-          </button>
-        </div>
-      )}
 
       {/* Map Container */}
       <div ref={mapContainerRef} className="flex-1 w-full relative z-10" />

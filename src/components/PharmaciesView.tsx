@@ -8,7 +8,9 @@ import {
   AlertCircle,
   ExternalLink,
   Timer,
-  ChevronLeft
+  ChevronLeft,
+  MessageSquarePlus,
+  CheckCircle2
 } from 'lucide-react';
 import { Pharmacy, SelectedRouteTarget } from '../types';
 import { formatArabicTime } from '../lib/initialData';
@@ -16,13 +18,21 @@ import { formatArabicTime } from '../lib/initialData';
 interface PharmaciesViewProps {
   pharmacies: Pharmacy[];
   onSelectOnMap: (target: SelectedRouteTarget) => void;
+  onOpenCommunityReport: (target: {
+    id: string;
+    name: string;
+    type: 'pharmacy';
+    district?: string;
+    isOnDuty?: boolean;
+  }) => void;
 }
 
 type FilterTab = 'nearest' | 'on_duty' | 'all';
 
 export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
   pharmacies,
-  onSelectOnMap
+  onSelectOnMap,
+  onOpenCommunityReport
 }) => {
   const [filterTab, setFilterTab] = useState<FilterTab>('nearest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -223,6 +233,12 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
                           مغلقة
                         </span>
                       )}
+                      {pharmacy.communityVerifiedAt && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60 px-1.5 py-0.5 rounded-md">
+                          <CheckCircle2 className="w-3 h-3 text-amber-600" />
+                          مؤكد مجتمعياً
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-xs text-slate-500 flex items-center gap-1">
@@ -264,10 +280,30 @@ export const PharmaciesView: React.FC<PharmaciesViewProps> = ({
                     <span>رسم مسار الطريق على الخريطة</span>
                   </span>
 
-                  <span className="text-slate-400 flex items-center gap-0.5 text-[11px]">
-                    <span>عرض التفاصيل</span>
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenCommunityReport({
+                          id: pharmacy.id,
+                          name: pharmacy.name,
+                          type: 'pharmacy',
+                          district: pharmacy.district,
+                          isOnDuty: pharmacy.isOnDuty
+                        });
+                      }}
+                      title="مشاركة تحديث أو تصحيح معلومة حول هذه الصيدلية"
+                      className="text-slate-600 hover:text-emerald-800 font-bold flex items-center gap-1 text-[11px] bg-slate-100 hover:bg-emerald-50 px-2 py-1 rounded-lg border border-slate-200/80 transition-colors"
+                    >
+                      <MessageSquarePlus className="w-3 h-3 text-emerald-700" />
+                      <span>تحديث</span>
+                    </button>
+
+                    <span className="text-slate-400 flex items-center gap-0.5 text-[11px]">
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
                 </div>
               </div>
             );

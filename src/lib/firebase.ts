@@ -8,12 +8,13 @@ import {
   onSnapshot,
   setDoc,
   updateDoc,
+  deleteDoc,
   getDocs
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { Pharmacy, Nurse, Hospital } from '../types';
+import { Pharmacy, Nurse, Hospital, AppUser } from '../types';
 import { INITIAL_PHARMACIES, INITIAL_NURSES, INITIAL_HOSPITALS } from './initialData';
-import { offlineStorage } from './offlineStorage';
+import { offlineStorage, DEFAULT_ADMIN_USER } from './offlineStorage';
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
@@ -91,6 +92,15 @@ export async function seedInitialDataIfEmpty() {
           updatedAt: new Date().toISOString()
         });
       }
+    }
+
+    // Seed default admin account if app_users is empty
+    const userSnap = await getDocs(collection(db, 'app_users'));
+    if (userSnap.empty) {
+      await setDoc(doc(db, 'app_users', DEFAULT_ADMIN_USER.id), {
+        ...DEFAULT_ADMIN_USER,
+        updatedAt: new Date().toISOString()
+      });
     }
   } catch (err) {
     console.warn('Initial seed skipped or offline:', err);
@@ -221,3 +231,83 @@ export async function updateNurseStatus(
     throw error;
   }
 }
+
+// Subscribe to real-time changes in app users (Admin & providers)
+export function subscribeToUsers(
+  onData: (data: AppUser[]) => void,
+  onError?: (err: unknown) => void
+) {
+  const path = 'app_users';
+  return onSnapshot(
+    collection(db, path),
+    (snapshot) => {
+      if (snapshot.empty) {
+        onData([DEFAULT_ADMIN_USER]);
+        offlineStorage.saveUsers([DEFAULT_ADMIN_USER]);
+        return;
+      }
+      const items: AppUser[] = [];
+      snapshot.forEach((docSnap) => {
+        items.push({ id: docSnap.id, ...docSnap.data() } as AppUser);
+      });
+      // Ensure admin exists
+      if (!items.some(u => u.role === 'admin')) {
+        items.unshift(DEFAULT_ADMIN_USER);
+      }
+      onData(items);
+      offlineStorage.saveUsers(items);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, path);
+      const cached = offlineStorage.getUsers();
+      onData(cached || [DEFAULT_ADMIN_USER]);
+      if (onError) onError(error);
+    }
+  );
+}
+
+// Save or update user credentials (Admin can edit admin credentials or add/edit providers)
+export async function saveUserAccount(user: AppUser): Promise<void> {
+  const path = `app_users/${user.id}`;
+  try {
+    await setDoc(
+      doc(db, 'app_users', user.id),
+      {
+        ...user,
+        updatedAt: new Date().toISOString()
+      },
+      { merge: true }
+    );
+    // Also update offline cache
+    const currentUsers = offlineStorage.getUsers();
+    const updatedUsers = [
+      user,
+      ...currentUsers.filter((u) => u.id !== user.id)
+    ];
+    offlineStorage.saveUsers(updatedUsers);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+    // Fallback save to local storage
+    const currentUsers = offlineStorage.getUsers();
+    const updatedUsers = [
+      user,
+      ...currentUsers.filter((u) => u.id !== user.id)
+    ];
+    offlineStorage.saveUsers(updatedUsers);
+  }
+}
+
+// Delete user account
+export async function deleteUserAccount(userId: string): Promise<void> {
+  const path = `app_users/${userId}`;
+  try {
+    await deleteDoc(doc(db, 'app_users', userId));
+    const currentUsers = offlineStorage.getUsers();
+    offlineStorage.saveUsers(currentUsers.filter((u) => u.id !== userId));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+    const currentUsers = offlineStorage.getUsers();
+    offlineStorage.saveUsers(currentUsers.filter((u) => u.id !== userId));
+  }
+}
+

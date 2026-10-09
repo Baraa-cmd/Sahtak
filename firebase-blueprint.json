@@ -56,6 +56,22 @@
         "updatedAt": { "type": "string", "maxLength": 50 }
       },
       "required": ["id", "name", "district", "latitude", "longitude", "emergency24h"]
+    },
+    "AppUser": {
+      "title": "AppUser",
+      "description": "حسابات تسجيل الدخول للأدمن وأصحاب الصيدليات والممرضين",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string", "maxLength": 60 },
+        "password": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "enum": ["admin", "pharmacist", "nurse"] },
+        "targetId": { "type": "string", "maxLength": 100 },
+        "targetName": { "type": "string", "maxLength": 100 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "username", "password", "role"]
     }
   },
   "firestore": {
@@ -70,6 +86,10 @@
     "/hospitals/{hospitalId}": {
       "schema": "Hospital",
       "description": "مجموعة المشافي والمراكز الطبية"
+    },
+    "/app_users/{userId}": {
+      "schema": "AppUser",
+      "description": "مجموعة حسابات المشرفين والكوادر الصحية"
     }
   }
 }

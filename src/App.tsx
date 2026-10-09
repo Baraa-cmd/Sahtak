@@ -5,7 +5,10 @@ import {
   Hospital,
   UserLocation,
   ActiveTab,
-  SelectedRouteTarget
+  SelectedRouteTarget,
+  CommunityReport,
+  AppUser,
+  AuthSession
 } from './types';
 import {
   INITIAL_PHARMACIES,
@@ -22,9 +25,10 @@ import {
   subscribeToPharmacies,
   subscribeToNurses,
   subscribeToHospitals,
+  subscribeToUsers,
   seedInitialDataIfEmpty
 } from './lib/firebase';
-import { offlineStorage } from './lib/offlineStorage';
+import { offlineStorage, DEFAULT_ADMIN_USER } from './lib/offlineStorage';
 import { notificationService } from './lib/notifications';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -32,8 +36,10 @@ import { PharmaciesView } from './components/PharmaciesView';
 import { NursesView } from './components/NursesView';
 import { HospitalsView } from './components/HospitalsView';
 import { MapView } from './components/MapView';
-import { ProviderModal } from './components/ProviderModal';
+import { AuthModal } from './components/AuthModal';
 import { LocationModal } from './components/LocationModal';
+import { CommunityReportModal } from './components/CommunityReportModal';
+import { OfflineIndicator } from './components/OfflineIndicator';
 
 export default function App() {
   // Navigation
@@ -55,7 +61,15 @@ export default function App() {
   });
   const [isLocating, setIsLocating] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-  const [isManualPickerActive, setIsManualPickerActive] = useState(false);
+
+  // Auth & Roles State
+  const [authSession, setAuthSession] = useState<AuthSession | null>(() => {
+    return offlineStorage.getAuthSession();
+  });
+  const [users, setUsers] = useState<AppUser[]>(() => {
+    return offlineStorage.getUsers() || [DEFAULT_ADMIN_USER];
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Network Online/Offline state
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
@@ -67,6 +81,17 @@ export default function App() {
 
   // Provider Modal state
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
+
+  // Community Reporting state
+  const [communityModalTarget, setCommunityModalTarget] = useState<{
+    id: string;
+    name: string;
+    type: 'pharmacy' | 'nurse' | 'hospital';
+    district?: string;
+    currentPhone?: string;
+    isOnDuty?: boolean;
+  } | null>(null);
+  const [communityToast, setCommunityToast] = useState<string | null>(null);
 
   // Selected Target for direct map routing
   const [selectedRouteTarget, setSelectedRouteTarget] = useState<SelectedRouteTarget | null>(null);
@@ -98,19 +123,6 @@ export default function App() {
     };
   }, []);
 
-  // Set manual user location (from map click, pin drag, or input)
-  const handleSetUserLocation = useCallback((lat: number, lng: number, name?: string) => {
-    const newLoc: UserLocation = {
-      latitude: lat,
-      longitude: lng,
-      districtName: name || 'موقع محدد يدوياً 📍',
-      isAuto: false,
-      source: 'manual'
-    };
-    setUserLocation(newLoc);
-    offlineStorage.saveUserLocation(newLoc);
-  }, []);
-
   // Choose preset district in Dayr Hafir
   const handleSelectPresetDistrict = useCallback((preset: PresetDistrict) => {
     const newLoc: UserLocation = {
@@ -122,13 +134,6 @@ export default function App() {
     };
     setUserLocation(newLoc);
     offlineStorage.saveUserLocation(newLoc);
-  }, []);
-
-  // Activate manual map picker mode
-  const handleActivateManualMapPick = useCallback(() => {
-    setActiveTab('map');
-    setIsManualPickerActive(true);
-    setIsLocationModalOpen(false);
   }, []);
 
   const [detectionNotice, setDetectionNotice] = useState<string | null>(null);
@@ -215,10 +220,15 @@ export default function App() {
       setRawHospitals(data);
     });
 
+    const unsubUsers = subscribeToUsers((data) => {
+      setUsers(data);
+    });
+
     return () => {
       unsubPharmacies();
       unsubNurses();
       unsubHospitals();
+      unsubUsers();
     };
   }, []);
 
@@ -282,6 +292,91 @@ export default function App() {
     window.location.href = 'tel:110';
   };
 
+  // Open Community Report modal for an entity
+  const handleOpenCommunityReport = useCallback(
+    (target: {
+      id: string;
+      name: string;
+      type: 'pharmacy' | 'nurse' | 'hospital';
+      district?: string;
+      currentPhone?: string;
+      isOnDuty?: boolean;
+    }) => {
+      setCommunityModalTarget(target);
+    },
+    []
+  );
+
+  // Submit community report and update state/cache
+  const handleSubmitCommunityReport = useCallback(
+    (report: CommunityReport, autoUpdateDuty?: boolean | null) => {
+      offlineStorage.saveCommunityReport(report);
+
+      if (report.targetType === 'pharmacy') {
+        setRawPharmacies((prev) => {
+          const updated = prev.map((p) => {
+            if (p.id === report.targetId) {
+              return {
+                ...p,
+                isOnDuty:
+                  autoUpdateDuty !== null && autoUpdateDuty !== undefined
+                    ? autoUpdateDuty
+                    : p.isOnDuty,
+                isOpen: autoUpdateDuty === true ? true : p.isOpen,
+                communityVerifiedAt: new Date().toISOString()
+              };
+            }
+            return p;
+          });
+          offlineStorage.savePharmacies(updated);
+          return updated;
+        });
+      } else if (report.targetType === 'nurse') {
+        setRawNurses((prev) => {
+          const updated = prev.map((n) => {
+            if (n.id === report.targetId) {
+              return {
+                ...n,
+                isOnDuty:
+                  autoUpdateDuty !== null && autoUpdateDuty !== undefined
+                    ? autoUpdateDuty
+                    : n.isOnDuty,
+                phone: report.suggestedPhone ? report.suggestedPhone : n.phone,
+                communityVerifiedAt: new Date().toISOString()
+              };
+            }
+            return n;
+          });
+          offlineStorage.saveNurses(updated);
+          return updated;
+        });
+      } else if (report.targetType === 'hospital') {
+        setRawHospitals((prev) => {
+          const updated = prev.map((h) => {
+            if (h.id === report.targetId) {
+              return {
+                ...h,
+                emergencyPhone: report.suggestedPhone
+                  ? report.suggestedPhone
+                  : h.emergencyPhone,
+                communityVerifiedAt: new Date().toISOString()
+              };
+            }
+            return h;
+          });
+          offlineStorage.saveHospitals(updated);
+          return updated;
+        });
+      }
+
+      setCommunityToast(
+        `تم تسجيل وتوثيق تحديثك حول ${report.targetName} بنجاح! شكراً لمساهمتك في خدمة أهالي دير حافر 🌟`
+      );
+      setTimeout(() => setCommunityToast(null), 5000);
+    },
+    []
+  );
+
   // Counts of on-duty items
   const onDutyPharmaciesCount = useMemo(
     () => rawPharmacies.filter((p) => p.isOnDuty).length,
@@ -305,7 +400,8 @@ export default function App() {
           isOnline={isOnline}
           notificationsEnabled={notificationsEnabled}
           onRequestNotifications={handleRequestNotifications}
-          onOpenProviderModal={() => setIsProviderModalOpen(true)}
+          onOpenAuthModal={() => setIsAuthModalOpen(true)}
+          session={authSession}
           onEmergencySOS={handleEmergencySOS}
         />
 
@@ -322,12 +418,26 @@ export default function App() {
           </div>
         )}
 
+        {/* Community Toast Notification */}
+        {communityToast && (
+          <div className="bg-emerald-800 text-white text-xs px-3.5 py-2 flex items-center justify-between shadow-md animate-fadeIn z-30 shrink-0 border-b border-emerald-600/40">
+            <span className="font-bold">{communityToast}</span>
+            <button
+              onClick={() => setCommunityToast(null)}
+              className="text-emerald-200 hover:text-white mr-2 text-base font-bold leading-none"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto">
           {activeTab === 'pharmacies' && (
             <PharmaciesView
               pharmacies={pharmaciesWithDistance}
               onSelectOnMap={handleSelectOnMap}
+              onOpenCommunityReport={handleOpenCommunityReport}
             />
           )}
 
@@ -335,6 +445,7 @@ export default function App() {
             <NursesView
               nurses={nursesWithDistance}
               onSelectOnMap={handleSelectOnMap}
+              onOpenCommunityReport={handleOpenCommunityReport}
             />
           )}
 
@@ -342,6 +453,7 @@ export default function App() {
             <HospitalsView
               hospitals={hospitalsWithDistance}
               onSelectOnMap={handleSelectOnMap}
+              onOpenCommunityReport={handleOpenCommunityReport}
             />
           )}
 
@@ -354,9 +466,6 @@ export default function App() {
               selectedTarget={selectedRouteTarget}
               onClearSelectedTarget={() => setSelectedRouteTarget(null)}
               onSelectTarget={(target) => setSelectedRouteTarget(target)}
-              isManualPickerActive={isManualPickerActive}
-              onToggleManualPicker={setIsManualPickerActive}
-              onSetUserLocation={handleSetUserLocation}
               onOpenLocationModal={() => setIsLocationModalOpen(true)}
             />
           )}
@@ -370,6 +479,9 @@ export default function App() {
           onDutyNursesCount={onDutyNursesCount}
         />
 
+        {/* Offline Indicator Banner */}
+        <OfflineIndicator />
+
         {/* Location Picker & Troubleshoot Modal */}
         <LocationModal
           isOpen={isLocationModalOpen}
@@ -378,13 +490,27 @@ export default function App() {
           isLocating={isLocating}
           onDetectGps={handleDetectLocation}
           onSelectPreset={handleSelectPresetDistrict}
-          onActivateManualMapPick={handleActivateManualMapPick}
         />
 
-        {/* Provider Duty Management & Smart Timer Modal */}
-        <ProviderModal
-          isOpen={isProviderModalOpen}
-          onClose={() => setIsProviderModalOpen(false)}
+        {/* Community Report & Update Modal */}
+        <CommunityReportModal
+          isOpen={!!communityModalTarget}
+          onClose={() => setCommunityModalTarget(null)}
+          target={communityModalTarget}
+          onSubmitReport={handleSubmitCommunityReport}
+        />
+
+        {/* Authentication & Role-Based Control Modal (Lock Screen / Provider Portal) */}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          session={authSession}
+          onLogin={(sess) => setAuthSession(sess)}
+          onLogout={() => {
+            setAuthSession(null);
+            offlineStorage.saveAuthSession(null);
+          }}
+          users={users}
           pharmacies={rawPharmacies}
           nurses={rawNurses}
           onPharmacyUpdated={(updated) => {

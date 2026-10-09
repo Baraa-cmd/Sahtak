@@ -6,18 +6,28 @@ import {
   Compass,
   Search,
   ExternalLink,
-  ShieldAlert
+  ShieldAlert,
+  MessageSquarePlus,
+  CheckCircle2
 } from 'lucide-react';
 import { Hospital, SelectedRouteTarget } from '../types';
 
 interface HospitalsViewProps {
   hospitals: Hospital[];
   onSelectOnMap: (target: SelectedRouteTarget) => void;
+  onOpenCommunityReport: (target: {
+    id: string;
+    name: string;
+    type: 'hospital';
+    district?: string;
+    currentPhone?: string;
+  }) => void;
 }
 
 export const HospitalsView: React.FC<HospitalsViewProps> = ({
   hospitals,
-  onSelectOnMap
+  onSelectOnMap,
+  onOpenCommunityReport
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -150,6 +160,22 @@ export const HospitalsView: React.FC<HospitalsViewProps> = ({
                 >
                   <Compass className="w-3.5 h-3.5 text-emerald-400" />
                   <span>رسم مسار الطريق</span>
+                </button>
+
+                <button
+                  onClick={() =>
+                    onOpenCommunityReport({
+                      id: hospital.id,
+                      name: hospital.name,
+                      type: 'hospital',
+                      district: hospital.district,
+                      currentPhone: hospital.emergencyPhone
+                    })
+                  }
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-800 text-xs font-bold transition-all border border-slate-200"
+                  title="مشاركة تحديث أو ملاحظة حول هذا المركز"
+                >
+                  <MessageSquarePlus className="w-4 h-4 text-emerald-700" />
                 </button>
               </div>
             </div>

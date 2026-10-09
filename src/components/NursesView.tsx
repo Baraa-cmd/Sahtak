@@ -10,7 +10,9 @@ import {
   AlertCircle,
   Timer,
   Zap,
-  ChevronLeft
+  ChevronLeft,
+  MessageSquarePlus,
+  CheckCircle2
 } from 'lucide-react';
 import { Nurse, SelectedRouteTarget } from '../types';
 import { formatArabicTime } from '../lib/initialData';
@@ -18,13 +20,22 @@ import { formatArabicTime } from '../lib/initialData';
 interface NursesViewProps {
   nurses: Nurse[];
   onSelectOnMap: (target: SelectedRouteTarget) => void;
+  onOpenCommunityReport: (target: {
+    id: string;
+    name: string;
+    type: 'nurse';
+    district?: string;
+    currentPhone?: string;
+    isOnDuty?: boolean;
+  }) => void;
 }
 
 type FilterTab = 'nearest' | 'on_duty' | 'all';
 
 export const NursesView: React.FC<NursesViewProps> = ({
   nurses,
-  onSelectOnMap
+  onSelectOnMap,
+  onOpenCommunityReport
 }) => {
   const [filterTab, setFilterTab] = useState<FilterTab>('nearest');
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,6 +191,13 @@ export const NursesView: React.FC<NursesViewProps> = ({
                           مشغول بموعد
                         </span>
                       )}
+
+                      {nurse.communityVerifiedAt && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60 px-1.5 py-0.5 rounded-md">
+                          <CheckCircle2 className="w-3 h-3 text-amber-600" />
+                          مؤكد مجتمعياً
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-xs text-sky-800 font-semibold">{nurse.title}</p>
@@ -233,6 +251,23 @@ export const NursesView: React.FC<NursesViewProps> = ({
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>واتساب</span>
                   </a>
+
+                  <button
+                    onClick={() =>
+                      onOpenCommunityReport({
+                        id: nurse.id,
+                        name: nurse.name,
+                        type: 'nurse',
+                        district: nurse.district,
+                        currentPhone: nurse.phone,
+                        isOnDuty: nurse.isOnDuty
+                      })
+                    }
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-800 text-xs font-bold transition-all border border-slate-200/80"
+                    title="تحديث أو تصحيح معلومات الممرض"
+                  >
+                    <MessageSquarePlus className="w-4 h-4 text-emerald-700" />
+                  </button>
 
                   <button
                     onClick={() =>

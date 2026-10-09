@@ -7,9 +7,12 @@ import {
   BellRing,
   WifiOff,
   UserCheck,
-  ShieldAlert
+  ShieldAlert,
+  Lock,
+  Unlock
 } from 'lucide-react';
-import { UserLocation } from '../types';
+import { UserLocation, AuthSession } from '../types';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   userLocation: UserLocation;
@@ -19,7 +22,8 @@ interface HeaderProps {
   isOnline: boolean;
   notificationsEnabled: boolean;
   onRequestNotifications: () => void;
-  onOpenProviderModal: () => void;
+  onOpenAuthModal: () => void;
+  session: AuthSession | null;
   onEmergencySOS: () => void;
 }
 
@@ -31,7 +35,8 @@ export const Header: React.FC<HeaderProps> = ({
   isOnline,
   notificationsEnabled,
   onRequestNotifications,
-  onOpenProviderModal,
+  onOpenAuthModal,
+  session,
   onEmergencySOS
 }) => {
   return (
@@ -59,6 +64,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Controls */}
         <div className="flex items-center gap-1.5">
+          {/* PWA Install Button */}
+          <PWAInstallButton />
+
           {/* Notification Button */}
           <button
             onClick={onRequestNotifications}
@@ -76,15 +84,32 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Provider Portal Button */}
-          <button
-            onClick={onOpenProviderModal}
-            title="بوابة الكوادر والمناوبة"
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all border border-slate-200"
-          >
-            <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
-            <span>إدارة المناوبة</span>
-          </button>
+          {/* Lock Button (Opens Login / Control Panel) */}
+          {session ? (
+            <button
+              onClick={onOpenAuthModal}
+              title={`لوحة التحكم: ${session.user.displayName || session.user.username}`}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-xs font-black transition-all border border-emerald-300 shadow-2xs"
+            >
+              <Unlock className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+              <span className="truncate max-w-[75px]">
+                {session.user.role === 'admin'
+                  ? 'الأدمن 🛡️'
+                  : session.user.role === 'pharmacist'
+                  ? session.user.targetName || 'صيدليتي'
+                  : session.user.targetName || 'حسابي'}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={onOpenAuthModal}
+              title="تسجيل الدخول (زر القفل)"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 text-slate-800 text-xs font-bold transition-all border border-slate-200 shadow-2xs group"
+            >
+              <Lock className="w-3.5 h-3.5 text-emerald-700 group-hover:scale-110 transition-transform" />
+              <span>دخول</span>
+            </button>
+          )}
 
           {/* Emergency SOS Button */}
           <button

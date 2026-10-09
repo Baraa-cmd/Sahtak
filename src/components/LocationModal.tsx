@@ -11,8 +11,7 @@ import {
   Building2,
   Globe,
   Settings,
-  ChevronLeft,
-  MousePointerClick
+  ChevronLeft
 } from 'lucide-react';
 import { UserLocation } from '../types';
 import { DAYR_HAFIR_PRESETS, PresetDistrict } from '../lib/initialData';
@@ -24,7 +23,6 @@ interface LocationModalProps {
   isLocating: boolean;
   onDetectGps: () => void;
   onSelectPreset: (preset: PresetDistrict) => void;
-  onActivateManualMapPick: () => void;
   onDetectByIp?: () => void;
   isIpLocating?: boolean;
 }
@@ -36,7 +34,6 @@ export const LocationModal: React.FC<LocationModalProps> = ({
   isLocating,
   onDetectGps,
   onSelectPreset,
-  onActivateManualMapPick,
   onDetectByIp,
   isIpLocating = false
 }) => {
@@ -86,21 +83,17 @@ export const LocationModal: React.FC<LocationModalProps> = ({
             className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
               userLocation.source === 'gps' || userLocation.isAuto
                 ? 'bg-emerald-100 text-emerald-800'
-                : userLocation.source === 'manual'
-                ? 'bg-sky-100 text-sky-800'
                 : 'bg-amber-100 text-amber-800'
             }`}
           >
             {userLocation.source === 'gps' || userLocation.isAuto
               ? 'GPS 🛰️'
-              : userLocation.source === 'manual'
-              ? 'تحديد يدوي 📍'
               : 'حي محدد 🏘️'}
           </span>
         </div>
 
         {/* Primary Option: Automatic Real Location (GPS + Network) */}
-        <div className="space-y-2">
+        <div>
           <button
             onClick={() => {
               onDetectGps();
@@ -132,31 +125,9 @@ export const LocationModal: React.FC<LocationModalProps> = ({
               <ChevronLeft className="w-4 h-4 text-white/80 shrink-0" />
             )}
           </button>
-
-          {/* Secondary Option: Manual Pick on Map */}
-          <button
-            onClick={() => {
-              onClose();
-              onActivateManualMapPick();
-            }}
-            className="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 p-2.5 rounded-2xl font-bold text-xs transition-all flex items-center justify-between gap-2 shadow-2xs"
-          >
-            <div className="flex items-center gap-2.5 text-right">
-              <div className="w-7 h-7 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
-                <MousePointerClick className="w-4 h-4 text-slate-700" />
-              </div>
-              <div>
-                <div className="text-xs font-bold text-slate-900">تحديد موقعي يدوياً على الخريطة 🎯</div>
-                <div className="text-[10px] text-slate-500 font-normal">
-                  انقر على مكانك مباشرة أو اسحب الدبوس
-                </div>
-              </div>
-            </div>
-            <ChevronLeft className="w-4 h-4 text-slate-400 shrink-0" />
-          </button>
         </div>
 
-        {/* Option 3: Select District / Neighborhood in Dayr Hafir */}
+        {/* Option 2: Select District / Neighborhood in Dayr Hafir */}
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between">
             <span className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5">
@@ -232,7 +203,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
                   <strong>آيفون (سفاري):</strong> افتح إعدادات الهاتف ⚙️ &gt; الخصوصية والأمن &gt; خدمات الموقع &gt; تأكد من تفعيلها لمتصفح Safari.
                 </li>
                 <li>
-                  <strong>أجهزة الحواسيب:</strong> أجهزة الكمبيوتر لا تحتوي عادة على شريحة GPS فعلية وتعتمد على شبكة الإنترنت. لذلك يُنصح باختيار <em>«تحديد موقعي يدوياً على الخريطة»</em> أو اختيار الحي مباشرة.
+                  <strong>أجهزة الحواسيب:</strong> أجهزة الكمبيوتر لا تحتوي عادة على شريحة GPS فعلية وتعتمد على شبكة الإنترنت. لذلك يُنصح باختيار الحي مباشرة من القائمة أعلاه.
                 </li>
               </ul>
             </div>

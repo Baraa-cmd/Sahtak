@@ -12,6 +12,8 @@ export interface Pharmacy {
   services: string[];
   updatedAt?: string;
   distanceKm?: number;
+  communityVerifiedAt?: string;
+  communityNote?: string;
 }
 
 export interface Nurse {
@@ -30,6 +32,8 @@ export interface Nurse {
   rating: number;
   updatedAt?: string;
   distanceKm?: number;
+  communityVerifiedAt?: string;
+  communityNote?: string;
 }
 
 export interface Hospital {
@@ -44,6 +48,28 @@ export interface Hospital {
   services: string[];
   updatedAt?: string;
   distanceKm?: number;
+  communityVerifiedAt?: string;
+  communityNote?: string;
+}
+
+export type CommunityReportType =
+  | 'duty_confirm'
+  | 'duty_closed'
+  | 'phone_update'
+  | 'medicine_note'
+  | 'location_fix'
+  | 'general_note';
+
+export interface CommunityReport {
+  id: string;
+  targetId: string;
+  targetName: string;
+  targetType: 'pharmacy' | 'nurse' | 'hospital';
+  reportType: CommunityReportType;
+  details: string;
+  suggestedPhone?: string;
+  reporterName?: string;
+  createdAt: string;
 }
 
 export type LocationSource = 'gps' | 'manual' | 'preset' | 'ip' | 'default';
@@ -74,4 +100,23 @@ export interface SelectedRouteTarget {
   longitude: number;
   distanceKm?: number;
   district: string;
+}
+
+export type UserRole = 'admin' | 'pharmacist' | 'nurse';
+
+export interface AppUser {
+  id: string;
+  username: string;
+  password: string;
+  role: UserRole;
+  targetId?: string; // ID of linked Pharmacy or Nurse
+  targetName?: string; // Display name of linked Pharmacy or Nurse
+  displayName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AuthSession {
+  user: AppUser;
+  loginTime: string;
 }
