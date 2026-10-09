@@ -1466,9 +1466,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       dutyEndTime: newDuty ? '6:00 صباحاً' : '',
                       dutyHours: newDuty ? 'مناوبة ليلية حتى 6:00 صباحاً' : 'مفتوحة - دوام اعتيادي'
                     });
-                    if (newDuty) {
-                      notificationService.sendDutyNotification(p.name, '6:00 صباحاً', p.district);
-                    }
                     onPharmacyUpdated({
                       ...p,
                       isOnDuty: newDuty,
