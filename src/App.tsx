@@ -41,8 +41,10 @@ import { AuthModal } from './components/AuthModal';
 import { LocationModal } from './components/LocationModal';
 import { CommunityReportModal } from './components/CommunityReportModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { SplashScreen } from './components/SplashScreen';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   // Navigation
   const [activeTab, setActiveTab] = useState<ActiveTab>('pharmacies');
 
@@ -76,9 +78,42 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
   // Notifications state
-  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(
-    notificationService.getPermission() === 'granted'
-  );
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
+
+  // Auto-request notifications on initial app mount (Native APK & Web)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const initNotifications = async () => {
+      try {
+        const perm = await notificationService.getPermission();
+        if (perm === 'granted') {
+          setNotificationsEnabled(true);
+          return;
+        }
+
+        // Prompt automatically after 1.2s to let app mount smoothly
+        timer = setTimeout(async () => {
+          try {
+            const res = await notificationService.requestPermission();
+            const granted = res === 'granted';
+            setNotificationsEnabled(granted);
+            if (granted) {
+              notificationService.sendNotification('منصة صحتك - دير حافر 🩺', {
+                body: 'تم تفعيل التنبيهات اللحظية للمناوبات والطوارئ بنجاح.'
+              });
+            }
+          } catch (e) {
+            console.warn('Auto notification request error:', e);
+          }
+        }, 1200);
+      } catch (err) {
+        console.warn('Init notifications error:', err);
+      }
+    };
+
+    initNotifications();
+    return () => clearTimeout(timer);
+  }, []);
 
   // Provider Modal state
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
@@ -517,6 +552,29 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto">
+          {/* Notifications Activation Banner (shown when notifications not yet permitted) */}
+          {!notificationsEnabled && (
+            <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 text-white p-3.5 mx-4 mt-3 rounded-2xl shadow-md border border-emerald-600/50 flex items-center justify-between gap-3 text-xs animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-bold text-base shrink-0 shadow-xs animate-bounce">
+                  🔔
+                </div>
+                <div>
+                  <p className="font-black text-amber-300">تفعيل إشعارات المناوبة</p>
+                  <p className="text-emerald-100 text-[11px] font-medium leading-tight">
+                    اضغط لتصلك الصيدلية المناوبة فور اعتمادها ليلاً
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleRequestNotifications}
+                className="bg-amber-400 hover:bg-amber-300 active:scale-95 text-amber-950 font-black px-3 py-1.5 rounded-xl shadow-xs transition-all shrink-0 text-xs"
+              >
+                تفعيل الآن
+              </button>
+            </div>
+          )}
+
           {activeTab === 'pharmacies' && (
             <PharmaciesView
               pharmacies={pharmaciesWithDistance}
@@ -633,6 +691,9 @@ export default function App() {
             );
           }}
         />
+
+        {/* Professional Medical Splash Screen Overlay */}
+        {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       </div>
     </div>
   );

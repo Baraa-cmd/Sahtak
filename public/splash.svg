@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280" width="720" height="1280">
+  <defs>
+    <radialGradient id="splashGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="50%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#022c22" />
+    </radialGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#ecfdf5" />
+    </linearGradient>
+    <filter id="splashShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="1280" fill="url(#splashGlow)" />
+
+  <!-- Center Group -->
+  <g transform="translate(360, 537.6)">
+    <!-- Emblem Background Container -->
+    <g filter="url(#splashShadow)">
+      <rect x="-90" y="-90" width="180" height="180" rx="48" fill="url(#cardGrad)" />
+      
+      <!-- Cross Icon inside -->
+      <path d="M -24 -60 C -24 -64 -20 -68 -16 -68 L 16 -68 C 20 -68 24 -64 24 -60 L 24 -24 L 60 -24 C 64 -24 68 -20 68 -16 L 68 16 C 68 20 64 24 60 24 L 24 24 L 24 60 C 24 64 20 68 16 68 L -16 68 C -20 68 -24 64 -24 60 L -24 24 L -60 24 C -64 24 -68 20 -68 16 L -68 -16 C -68 -20 -64 -24 -60 -24 L -24 -24 Z" fill="#047857" />
+      
+      <!-- Heartbeat inside cross -->
+      <path d="M -60 0 L -28 0 L -18 -26 L -4 28 L 8 -16 L 18 10 L 28 0 L 60 0" 
+            fill="none" 
+            stroke="#ffffff" 
+            stroke-width="5" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" />
+    </g>
+
+    <!-- App Title in Arabic -->
+    <text y="145" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif" font-size="34" font-weight="800" fill="#ffffff" letter-spacing="1">صحتك دير حافر</text>
+
+    <!-- Subtitle Badge -->
+    <rect x="-150" y="172" width="300" height="36" rx="18" fill="#065f46" stroke="#34d399" stroke-width="1.5" stroke-opacity="0.4" />
+    <text y="196" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', Tahoma, Arial, sans-serif" font-size="15" font-weight="600" fill="#a7f3d0">دليلك الطبي للمناوبات والرعاية الصحية</text>
+  </g>
+
+  <!-- Bottom Pulse Loading Indicator -->
+  <g transform="translate(360, 1126.4)">
+    <circle cx="-24" cy="0" r="5" fill="#34d399" opacity="0.4" />
+    <circle cx="0" cy="0" r="6" fill="#10b981" />
+    <circle cx="24" cy="0" r="5" fill="#34d399" opacity="0.4" />
+    <text y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#6ee7b7" opacity="0.75">جاري تحديث بيانات المناوبات...</text>
+  </g>
+</svg>

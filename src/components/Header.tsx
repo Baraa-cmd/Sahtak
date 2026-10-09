@@ -44,8 +44,8 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-emerald-700 flex items-center justify-center text-white shadow-xs">
-            <Activity className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs shrink-0 bg-emerald-700 flex items-center justify-center border border-emerald-600/30">
+            <img src="/icon.svg" alt="صحتك دير حافر" className="w-full h-full object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">

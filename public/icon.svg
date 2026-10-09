@@ -1,28 +1,47 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#047857" />
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="50%" stop-color="#047857" />
       <stop offset="100%" stop-color="#064e3b" />
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.25" />
+    <linearGradient id="crossGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#f0fdf4" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#022c22" flood-opacity="0.4" />
+    </filter>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#34d399" flood-opacity="0.5" />
     </filter>
   </defs>
-  <!-- Background with Safe Margin -->
-  <rect width="512" height="512" rx="112" fill="url(#bg)" />
-  
-  <!-- Subtle inner glow ring -->
-  <rect x="24" y="24" width="464" height="464" rx="88" fill="none" stroke="#34d399" stroke-width="4" stroke-opacity="0.3" />
 
-  <!-- Medical Cross & Pulse Container -->
-  <g filter="url(#shadow)" transform="translate(0, -4)">
-    <!-- Medical Cross -->
-    <path d="M 220 120 C 220 111.16 227.16 104 236 104 L 276 104 C 284.84 104 292 111.16 292 120 L 292 212 L 384 212 C 392.84 212 400 219.16 400 228 L 400 268 C 400 276.84 392.84 284 384 284 L 292 284 L 292 376 C 292 384.84 284.84 392 276 392 L 236 392 C 227.16 392 220 384.84 220 376 L 220 284 L 128 284 C 119.16 284 112 276.84 112 268 L 112 228 C 112 219.16 119.16 212 128 212 L 220 212 Z" fill="#ffffff" />
-    
-    <!-- Heartbeat / Pulse Wave -->
-    <path d="M 120 248 L 195 248 L 225 185 L 255 315 L 285 220 L 315 270 L 335 248 L 392 248" fill="none" stroke="#059669" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <!-- Inner subtle border glow -->
+  <rect x="16" y="16" width="480" height="480" rx="114" fill="none" stroke="#6ee7b7" stroke-width="4" stroke-opacity="0.35" />
+
+  <!-- Medical Cross with Shadow -->
+  <g filter="url(#shadow)">
+    <!-- Main Cross Body -->
+    <path d="M 216 96 C 216 85 225 76 236 76 L 276 76 C 287 76 296 85 296 96 L 296 216 L 416 216 C 427 216 436 225 436 236 L 436 276 C 436 287 427 296 416 296 L 296 296 L 296 416 C 296 427 287 436 276 436 L 236 436 C 225 436 216 427 216 416 L 216 296 L 96 296 C 85 296 76 287 76 276 L 76 236 C 76 225 85 216 96 216 L 216 216 Z" fill="url(#crossGrad)" />
   </g>
 
-  <!-- Crescent Emblem -->
-  <circle cx="256" cy="425" r="14" fill="#a7f3d0" />
+  <!-- ECG Heartbeat Wave across the cross -->
+  <path d="M 88 256 L 180 256 L 210 180 L 244 330 L 276 220 L 306 280 L 328 256 L 424 256" 
+        fill="none" 
+        stroke="#047857" 
+        stroke-width="16" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+
+  <!-- Heart pulse dots -->
+  <circle cx="210" cy="180" r="8" fill="#10b981" />
+  <circle cx="244" cy="330" r="8" fill="#047857" />
+  <circle cx="276" cy="220" r="8" fill="#10b981" />
+
+  <!-- Subtle Crescent Top Right -->
+  <circle cx="390" cy="120" r="16" fill="#a7f3d0" opacity="0.9" />
 </svg>

@@ -1,14 +1,66 @@
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
+
 export const notificationService = {
-  isSupported(): boolean {
-    return 'Notification' in window;
+  _channelCreated: false,
+
+  isNative(): boolean {
+    return Capacitor.isNativePlatform();
   },
 
-  getPermission(): NotificationPermission {
+  isSupported(): boolean {
+    if (this.isNative()) return true;
+    return typeof window !== 'undefined' && 'Notification' in window;
+  },
+
+  async ensureNativeChannel() {
+    if (!this.isNative() || this._channelCreated) return;
+    try {
+      await LocalNotifications.createChannel({
+        id: 'duty-channel',
+        name: 'إشعارات صيدليات المناوبة والطوارئ',
+        description: 'تنبيهات فورية عند اعتماد الصيدليات المناوبة في دير حافر',
+        importance: 5, // High heads-up alert
+        visibility: 1, // Public on lockscreen
+        vibration: true,
+        sound: 'beep.wav',
+        lights: true,
+        lightColor: '#059669'
+      });
+      this._channelCreated = true;
+    } catch (e) {
+      console.warn('Channel creation error:', e);
+    }
+  },
+
+  async getPermission(): Promise<NotificationPermission> {
+    if (this.isNative()) {
+      try {
+        const perm = await LocalNotifications.checkPermissions();
+        if (perm.display === 'granted') return 'granted';
+        if (perm.display === 'denied') return 'denied';
+        return 'default';
+      } catch {
+        return 'default';
+      }
+    }
+
     if (!this.isSupported()) return 'denied';
     return Notification.permission;
   },
 
   async requestPermission(): Promise<NotificationPermission> {
+    if (this.isNative()) {
+      try {
+        await this.ensureNativeChannel();
+        const res = await LocalNotifications.requestPermissions();
+        return res.display === 'granted' ? 'granted' : 'denied';
+      } catch (e) {
+        console.warn('Native permission request failed:', e);
+        return 'denied';
+      }
+    }
+
     if (!this.isSupported()) return 'denied';
     try {
       const permission = await Notification.requestPermission();
@@ -40,9 +92,7 @@ export const notificationService = {
   },
 
   async sendNotification(title: string, options?: NotificationOptions): Promise<boolean> {
-    if (!this.isSupported() || Notification.permission !== 'granted') {
-      return false;
-    }
+    const isNativeApp = this.isNative();
 
     this.playChime();
 
@@ -52,6 +102,37 @@ export const notificationService = {
       } catch {
         // Ignore vibration errors
       }
+    }
+
+    // 1. If running as Native Android APK
+    if (isNativeApp) {
+      try {
+        await this.ensureNativeChannel();
+        const notifId = Math.floor(Math.random() * 90000) + 10000;
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: notifId,
+              title: title,
+              body: options?.body || '',
+              channelId: 'duty-channel',
+              sound: 'beep.wav',
+              smallIcon: 'ic_launcher_round',
+              iconColor: '#059669',
+              actionTypeId: '',
+              extra: null
+            }
+          ]
+        });
+        return true;
+      } catch (e) {
+        console.warn('Native notification schedule error:', e);
+      }
+    }
+
+    // 2. Web / PWA fallback
+    if (!this.isSupported() || Notification.permission !== 'granted') {
+      return false;
     }
 
     const defaultOptions: NotificationOptions = {
@@ -74,17 +155,12 @@ export const notificationService = {
       new Notification(title, defaultOptions);
       return true;
     } catch (e) {
-      console.warn('Notification send failed, falling back:', e);
-      try {
-        new Notification(title, defaultOptions);
-        return true;
-      } catch {
-        return false;
-      }
+      console.warn('Web notification send failed:', e);
+      return false;
     }
   },
 
-  // منع التكرار: سجل زمني لآخر إشعار تم إرساله لكل صيدلية (لمدة 60 ثانية)
+  // منع التكرار: سجل زمني لآخر إشعار تم إرساله لكل صيدلية (لمدة 30 ثانية)
   _dutySentTimes: new Map<string, number>(),
 
   /**
@@ -92,7 +168,6 @@ export const notificationService = {
    */
   formatPharmacyName(name: string): string {
     let clean = name.trim();
-    // إزالة أي تكرار لكلمة "صيدلية" متتالية
     clean = clean.replace(/^(صيدلية\s*)+/gi, '').trim();
     return `صيدلية ${clean}`;
   },
@@ -124,7 +199,6 @@ export const notificationService = {
       .filter(Boolean)
       .join(' | ');
 
-    // استخدام tag ثابت بدون Date.now() لمنع تكرار النوافذ في نظام التشغيل والمتصفح
     const safeTag = `duty-${cleanName.replace(/\s+/g, '-')}`;
 
     return this.sendNotification(title, {
@@ -133,4 +207,3 @@ export const notificationService = {
     } as NotificationOptions);
   }
 };
-
